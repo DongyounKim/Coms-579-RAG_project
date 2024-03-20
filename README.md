@@ -108,13 +108,13 @@ The file have to store in 'documents' folder.
 >>> python upload.py --file_name sample.pdf
 ```
 
-####2. Folder upload
+#### 2. Folder upload
 Upload the default the folder path
 
 ```
 >>> python upload.py
 ```
-####3. Optional arguments
+#### 3. Optional arguments
  
 ```
 >>> python upload.py --name_space test_case --chunck_size 100 --chunk_overlap 0.20 # overlap = 100*0.2 = 20.
