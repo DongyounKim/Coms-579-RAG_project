@@ -44,10 +44,7 @@ class Upload:
         """
         Summary
         """
-        #Key setting - Hide the API keys on Github
-        #os.environ["OPENAI_API_KEY"] = config.OPENAI_API_KEY
-        
-        #Enter the API keys
+        #Enter the API keys for accessing Pipecone
         os.environ["PINECONE_API_KEY"] = config.PINECONE_API_KEY
         os.environ["PINECONE_ENV"] = config.PINECONE_ENV
         
