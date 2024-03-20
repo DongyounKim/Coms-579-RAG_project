@@ -36,13 +36,8 @@ Build the Retrieval-augmented generation (RAG)
 
 #### Steps of the sub-task
 1. Read the file : Load and read pdf file + pre-processing for replacing consecutive spaces, newlines and tabs in the file.
-    ```
-    SimpleDirectoryReader() # Llama_index framework
-    ```
+
 2. Chunk: This project chunks the pdf file based on the sentence - chunk size and chunk overlap
-```
-SentenceSplitter # Llama_index framework
-```
 
 3. Embedding: This project use a simple embedding model (bge-small-en-v1.5) from hugging face. Because the OpenAI API (GPT) is subject to rate limitation error.
 
