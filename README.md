@@ -12,15 +12,21 @@ Build the Retrieval-augmented generation (RAG)
 2. VectorDB: [PineCone]  (https://www.pinecone.io/)
 3. UI: Funix.io
 
+## Demo video link
+1st demo: https://youtu.be/m0bHtik0rVs?si=d6gJkUau4J8j9pRF
+
 ## Project Structure
 
 #### Data repository
 ```
 .
 |-- documents/ # documentation files (Every input have to store it in doucments)
+|-- demos/
+| README.md
 |-- demos/ # videos demos
 | upload.py
 | requirement.txt
+| README.md
 
 ```
 - **documents**: This folder contains input files (pdf)
