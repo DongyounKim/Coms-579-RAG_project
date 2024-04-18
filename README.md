@@ -5,6 +5,14 @@ The main instruction following: https://github.com/forrestbao/nlp-class/blob/mas
 ## Team members
 Dongyoun Kim, Daeun Kim
 
+## Recent updates
+* <b>2024.4.15 query</b>
+* updated the upload.py file.
+```
+# line: 124 - adding {'text': node.text} in upload.py
+vectors=[(node.metadata['file_name'][:2]+node.metadata['page_label'], emb, {'text': node.text}) for node, emb in zip(nodes,embedding)],
+                    namespace=self.name_space)
+```
 ## Objectives
 Build the Retrieval-augmented generation (RAG)
 ### Tech stack
@@ -13,8 +21,8 @@ Build the Retrieval-augmented generation (RAG)
 3. UI: Funix.io
 
 ## Demo video link
-1st demo: https://youtu.be/m0bHtik0rVs?si=d6gJkUau4J8j9pRF
-
+* 1st demo (upload.py): https://youtu.be/m0bHtik0rVs?si=d6gJkUau4J8j9pRF
+* 2nd demo (query.py): 
 ## Project Structure
 
 #### Data repository
@@ -25,6 +33,7 @@ Build the Retrieval-augmented generation (RAG)
 | README.md
 |-- demos/ # videos demos
 | upload.py
+| query.py
 | requirement.txt
 | README.md
 
@@ -36,7 +45,13 @@ Build the Retrieval-augmented generation (RAG)
 
 
 ## Getting Started
-
+### KEY setting
+```
+#line 47 -  
+#Enter the API keys for accessing Pipecone
+os.environ["PINECONE_API_KEY"] = 'xxxxxx..' #Enter YOUR KEY
+os.environ["PINECONE_ENV"] = "gcp-starter" #Enter YOUR environment in Pipecone(DB)
+``` 
 ### Sub-tasks1
 **Task**: March 20: PDF upload and indexing via command line done. Include README file and a short video demo to show the usage and completion of your command line tool. e.g., `python upload.py --pdf_file=example.pdf` to add one PDF file each time. 
 
@@ -59,12 +74,30 @@ Build the Retrieval-augmented generation (RAG)
     parser.add_argument('--chunck_overlap', type=float, default=0.25, help='The portion of the overlap chunks: 25% = 0.25 range[0,1]')
     parser.parse_args()
 ```
+#### 1. Single file upload
+The file have to store in 'documents' folder.
+
+```
+>>> python upload.py --file_name sample.pdf
+```
+
+#### 2. Folder upload
+Upload the default the folder path
+
+```
+>>> python upload.py
+```
+#### 3. Optional arguments
+ 
+```
+>>> python upload.py --name_space test_case --chunck_size 100 --chunk_overlap 0.20 # overlap = 100*0.2 = 20.
+```
 
 * '--file_name': *[Optional]* Enter the PDF file name. The file have to store in 'documents/'.  If do not enter it, the code will **Reads the files in the documents folder**
 
     ```
     >>> python upload.py --file_name sample.pdf
-    ```  
+    ```
 
 * '--folder': *[Optional]* Enther the folder path containing pdf files. The default is './documents'
 
@@ -89,37 +122,30 @@ Build the Retrieval-augmented generation (RAG)
     ```
     >>> python upload.py --name_space test
     ```
+### Sub-tasks2
+**Task**:  Answer generation based on user queries via command line finish. Include README file and a short video demo to show the usage and completion of your query tool. e.g., `python query.py --question="What is the meaning of life?"` to get an answer.
 
-## Getting Started
-To implement this project,
+#### Steps of the sub-task
+1. Read the query : Read a query + embedding the query with the same model
 
-### KEY setting
-```
-#line 47 -  
-#Enter the API keys for accessing Pipecone
-os.environ["PINECONE_API_KEY"] = 'xxxxxx..' #Enter YOUR KEY
-os.environ["PINECONE_ENV"] = "gcp-starter" #Enter YOUR environment in Pipecone(DB)
-``` 
+2. Retrieval k-top chunks: The default of k-top: 5
 
-### Sub-tasks1
-#### 1. Single file upload
-The file have to store in 'documents' folder.
+3. Language Model: a small pre-trained language model by using Llma-CPP with Hugging face- `llama-2-13b-chat.Q4_0.gguf`
 
+
+#### Arguments
 ```
->>> python upload.py --file_name sample.pdf
+    parser.add_argument('--question', type=str, default= None, required=True, help='A query')
+    parser.add_argument('--top_k', type=int, default=5, help='top_k')
+```
+#### 1. Answer generation with (top-k= 5) based on the query
+```
+>>> python query.py --question "What is the attention model?"
 ```
 
-#### 2. Folder upload
-Upload the default the folder path
-
+#### 2. Answer generation with (user-defined top-k= 5) based on the query
 ```
->>> python upload.py
-```
-#### 3. Optional arguments
- 
-```
->>> python upload.py --name_space test_case --chunck_size 100 --chunk_overlap 0.20 # overlap = 100*0.2 = 20.
+>>> python query.py --question "What is the attention model?" --top_k 8
 ```
 
 
-## Reference
