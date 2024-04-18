@@ -121,7 +121,7 @@ class Upload:
         embedding = self.embedding(nodes)
         ## upsert
         self.pc_index.upsert(
-            vectors=[(node.metadata['file_name'][:2]+node.metadata['page_label'], emb) for node, emb in zip(nodes,embedding)],
+            vectors=[(node.metadata['file_name'][:2]+node.metadata['page_label'], emb, {'text': node.text}) for node, emb in zip(nodes,embedding)],
                     namespace=self.name_space)
         self.show_vectordb()
         
@@ -143,15 +143,20 @@ class Upload:
     
     def show_vectordb(self):
         print("Vector DB (Pinecone)- status: ", self.pc_index.describe_index_stats())
-        
+
+    def deletes(self,doc_name):
+        #current delete all
+        self.pc_index.delete(delete_all=True)
         
 def get_args(argv=None):
     parser = argparse.ArgumentParser(description= 'Process the pdf file for uploading the file to Pinecone (Vector DB)')
     parser.add_argument('--file_name', type=str, default= None, help='A path of input file')
+    #parser.add_argument('--folder', type=str, help='A folder path for input files')
     parser.add_argument('--folder', type=str, default= './documents/', help='A folder path for input files')
     parser.add_argument('--name_space', type=str, default = None, help= 'Enter the assgining the namespace on Pinecone')
     parser.add_argument('--chunck_size', type=int, default=200, help='Enter the chunck size over 100 range')
     parser.add_argument('--chunck_overlap', type=float, default=0.25, help='The portion of the overlap chunks: 25% = 0.25 range[0,1]')
+    parser.add_argument('--delete', type=bool, default=False)
     parser.parse_args()
     #parser.print_help()
     
@@ -162,3 +167,5 @@ if __name__== "__main__":
     data_load = Upload(inputs)
     # Upload
     data_load.upsert_data()
+    # data_load.deletes('hello')
+    # data_load.show_vectordb()
