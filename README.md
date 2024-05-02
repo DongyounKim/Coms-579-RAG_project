@@ -54,7 +54,6 @@ Build the Retrieval-augmented generation (RAG)
 2. Request the query: parameter -  *top-k*
 
 ### Implementation
-1. install requirements
 ```
 funix gui.py 
 ```
