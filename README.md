@@ -6,6 +6,9 @@ The main instruction following: https://github.com/forrestbao/nlp-class/blob/mas
 Dongyoun Kim, Daeun Kim
 
 ## Recent updates
+* <b>2024.5.1 upload.py and query.py </b>
+* update the upload.py and query.py as composed of simple functions instead of class in each file.
+* This is for the gui.py
 * <b>2024.4.15 query</b>
 * updated the upload.py file.
 ```
@@ -23,6 +26,7 @@ Build the Retrieval-augmented generation (RAG)
 ## Demo video link
 * 1st demo (upload.py): https://youtu.be/m0bHtik0rVs?si=d6gJkUau4J8j9pRF
 * 2nd demo (query.py): https://youtu.be/nXHYhM7QiWw?si=S1J_yPOGxLKiBfht
+* 3rd demo (gui.py):
 ## Project Structure
 
 #### Data repository
@@ -43,6 +47,17 @@ Build the Retrieval-augmented generation (RAG)
 - **upload.py**: This code reads the file or files in the default folder('documents'), and indexes and stores the file/files in a vector DB ('Pipecone').
 - **requirement.txt**: A list of packages or libraries needed to work on a project that can all be installed with the file.
 
+## RAG with gui
+### Final task
+**Task**: Build a GUI app for all steps above. Include README file and a short video demo to show the usage and completion of your GUI app.
+1. Upload pdf: parameters - *chunk size* and *chunk overlap*
+2. Request the query: parameter -  *top-k*
+
+### Implementation
+1. install requirements
+```
+funix gui.py 
+```
 
 ## Getting Started
 ### KEY setting
@@ -68,8 +83,6 @@ os.environ["PINECONE_ENV"] = "gcp-starter" #Enter YOUR environment in Pipecone(D
 ```
     parser = argparse.ArgumentParser(description= 'Process the pdf file for uploading the file to Pinecone (Vector DB)')
     parser.add_argument('--file_name', type=str, default= None, help='A path of input file')
-    parser.add_argument('--folder', type=str, default= './documents/', help='A folder path for input files')
-    parser.add_argument('--name_space', type=str, default = None, help= 'Enter the assgining the namespace on Pinecone')
     parser.add_argument('--chunck_size', type=int, default=200, help='Enter the chunck size over 100 range')
     parser.add_argument('--chunck_overlap', type=float, default=0.25, help='The portion of the overlap chunks: 25% = 0.25 range[0,1]')
     parser.parse_args()
@@ -81,13 +94,7 @@ The file have to store in 'documents' folder.
 >>> python upload.py --file_name sample.pdf
 ```
 
-#### 2. Folder upload
-Upload the default the folder path
-
-```
->>> python upload.py
-```
-#### 3. Optional arguments
+#### 2. With optional arguments
  
 ```
 >>> python upload.py --name_space test_case --chunck_size 100 --chunk_overlap 0.20 # overlap = 100*0.2 = 20.
@@ -97,12 +104,6 @@ Upload the default the folder path
 
     ```
     >>> python upload.py --file_name sample.pdf
-    ```
-
-* '--folder': *[Optional]* Enther the folder path containing pdf files. The default is './documents'
-
-    ```
-    >>> python upload.py --folder ./docs
     ```
 
 * '--chunk_size': *[Optional]* Enter the chunk size as integer. The default is 200
@@ -117,19 +118,12 @@ Upload the default the folder path
     >>> python upload.py --chunck_overlap 0.25
     ```
 
-* '--name_space': *[Optional]* Enter the name space for 'Pipecone' DB when storing the data on the index of the DB.
-
-    ```
-    >>> python upload.py --name_space test
-    ```
 ### Sub-tasks2
 **Task**:  Answer generation based on user queries via command line finish. Include README file and a short video demo to show the usage and completion of your query tool. e.g., `python query.py --question="What is the meaning of life?"` to get an answer.
 
 #### Steps of the sub-task
 1. Read the query : Read a query + embedding the query with the same model
-
 2. Retrieval k-top chunks: The default of k-top: 5
-
 3. Language Model: a small pre-trained language model by using Llma-CPP with Hugging face- `llama-2-13b-chat.Q4_0.gguf`
 
 
@@ -147,5 +141,3 @@ Upload the default the folder path
 ```
 >>> python query.py --question "What is the attention model?" --top_k 8
 ```
-
-

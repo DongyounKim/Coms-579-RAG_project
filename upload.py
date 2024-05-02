@@ -9,7 +9,6 @@
     Output:
     
 """
-
 import argparse
 import os
 import re
@@ -17,9 +16,8 @@ import re
 #from llama_index.embeddings.openai import OpenAIEmbedding -> is subject to rate limit
 # Llama indexs frameworks
 ## load the file
-from llama_index.core import Settings, SimpleDirectoryReader
-from llama_index.core.extractors import TitleExtractor
-from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core import (Document, Settings, SimpleDirectoryReader,
+                              VectorStoreIndex)
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.pinecone import PineconeVectorStore
@@ -28,144 +26,132 @@ from pinecone import Pinecone, PodSpec
 
 import config
 
-
-class Upload:
+#class Upload:
+"""
+    ## PipeCone
+    DATA_URL: https://rag579-9051ec9.svc.gcp-starter.pinecone.io
+    
+    # Future works
+    1. Upload the file from Funix.io by using drag and drop
+        (ref: line 224 https://github.com/forrestbao/vectara-python-cli/blob/main/src/vectara/__init__.py)
+    Currently, Upload the file to PipeCone with command line.
+"""
+os.environ["PINECONE_API_KEY"] = config.PINECONE_API_KEY
+os.environ["PINECONE_ENV"] = config.PINECONE_ENV
+        
+def read_data(file_path):
     """
-        ## PipeCone
-        DATA_URL: https://rag579-9051ec9.svc.gcp-starter.pinecone.io
-        
-        # Future works
-        1. Upload the file from Funix.io by using drag and drop
-            (ref: line 224 https://github.com/forrestbao/vectara-python-cli/blob/main/src/vectara/__init__.py)
-        Currently, Upload the file to PipeCone with command line.
+        1. Check the path whether it is file or folder
+        2. Read the documents to upsert
     """
+    ## 1. The data convert it into chunks using the load_data method
+    #a. file case
+    if file_path != None:
+        file_path = os.path.join('./documents',file_path)
+            
+    if os.path.isfile(file_path):
+        data_file = [file_path]
+        docs = SimpleDirectoryReader(input_files = data_file).load_data()
+    #b. folder case
+    else:
+        docs = SimpleDirectoryReader(file_path).load_data()
     
-    def __init__(self, args):
-        """
-        Summary
-        """
-        #Enter the API keys for accessing Pipecone
-        os.environ["PINECONE_API_KEY"] = config.PINECONE_API_KEY
-        os.environ["PINECONE_ENV"] = config.PINECONE_ENV
-        
-        self.args = args
-        self.file_name = self.args.file_name #str
-        
-        if self.file_name != None:
-            self.file_path = os.path.join('./documents',self.file_name)
-            print(self.file_path)
-        
-        ## Folder loader
-        else:
-            self.file_path = self.args.folder
-        
-        self.ch_size = self.args.chunck_size #int [100, 200]
-        self.ch_over = self.args.chunck_overlap #float
-        self.ch_over = self.ch_over * self.ch_size #int
-        self.name_space = self.args.name_space
-        
-        #Activate the vector DB
-        self.init_pipecone()
-        
-    def read_data(self, file_path):
-        """
-            1. Check the path whether it is file or folder
-            2. Read the documents to upsert
-        """
-        ## 1. The data convert it into chunks using the load_data method
-        #a. file case
-        if os.path.isfile(file_path):
-            self.data_file = [file_path]
-            self.docs = SimpleDirectoryReader(input_files = self.data_file).load_data()
-        
-        #b. folder case
-        else:
-            self. docs = SimpleDirectoryReader(self.file_path).load_data()
-        
-        print("Total pages read:", len(self.docs))
-        #return documents
-        return self.docs
+    print("Total pages read:", len(docs))
+    #return documents
+    return docs
     
-    # Define a function to preprocess text
-    def preprocess_text(self,text):
-        # Replace consecutive spaces, newlines and tabs
-        text = re.sub(r'\s+', ' ', text)
-        return text
+# Define a function to preprocess text
+def preprocess_text(text):
+    # Replace consecutive spaces, newlines and tabs
+    text = re.sub(r'\s+', ' ', text)
+    return text
     
-    def chunck(self, docs):
-        #Chunk -> nodes
-        splitter = SentenceSplitter(chunk_size=self.ch_size, chunk_overlap=self.ch_over)
+def chunk(docs, chunk_size = 200, chunk_overlap=0.25):
+    #Chunk -> nodes
+    #Check the node types
+    ## document type
+    chunk_overlap = int(chunk_size*chunk_overlap)
+    splitter = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    if isinstance(docs[0],str):
+        documents = [Document(text=t, metadata={"file_name":"funix gui","file_path": "funix", "page_label": "{}".format(_idx)}) for _idx,t in enumerate(docs)]
+        nodes = splitter.get_nodes_from_documents(documents)
+    else:
         nodes = splitter.get_nodes_from_documents(docs)
-        print("Chunck size :", self.ch_size, "Chunck overlap :", self.ch_over)
-        return nodes
+        print("Chunck size :", chunk_size, "Chunck overlap :", chunk_overlap)
+    return nodes
         
-    def embedding(self, nodes):
-        #Embedding output dimension = 384
-        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
-        embed_model= Settings.embed_model
-        embeddings_list = []
-        
+def embedding(nodes):
+    #Embedding output dimension = 384
+    Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+    embed_model= Settings.embed_model
+    embeddings_list = []
+    
+    #Check the node types
+    if isinstance(nodes[0],str):
         for node in nodes:
-            print("...Progressing the indexing data:", node.metadata['file_path'] + '...Page number: ' + node.metadata['page_label'])
+            res = embed_model.get_text_embedding(node)
+            embeddings_list.append(res)
+    else:
+        for node in nodes:
+            print("...Progressing the indexing data:", node.metadata['file_path'] + '...Page number: ' + node.metadata['page_label']+"\n")
             res = embed_model.get_text_embedding(node.text)
             embeddings_list.append(res)
         return embeddings_list
         
-    def upsert_data(self):
-        #Load
-        docs = self.read_data(self.file_path)
-        #chunks
-        nodes= self.chunck(docs)
-        
-        #embedding
-        embedding = self.embedding(nodes)
-        ## upsert
-        self.pc_index.upsert(
-            vectors=[(node.metadata['file_name'][:2]+node.metadata['page_label'], emb, {'text': node.text}) for node, emb in zip(nodes,embedding)],
-                    namespace=self.name_space)
-        self.show_vectordb()
-        
-    def init_pipecone(self):
-        # Define the index name
-        self.pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
-        index_name = "rag579"
-        if index_name not in self.pc.list_indexes().names():
-            #Embedding output dimension = 384
-            self.pc.create_index(name='rag579', dimension=384, metric="cosine", spec=PodSpec(environment="gcp-starter"))
-            # connect to index
-            self.pc_index = self.pc.Index(index_name)
-            
-        self.pc_index = self.pc.Index(index_name)
-        self.vector_store = PineconeVectorStore(pinecone_index=self.pc_index, namespace= self.name_space)
-        #Print init status
-        print("VectorDB init")
-        self.show_vectordb()
+def upsert_data(_idx, docs, ch_size = 200, ch_overlap =0.25):
+    #Load
+    #docs = read_data(self.file_path)
+    #chunks
+    nodes= chunk(docs, ch_size, ch_overlap)
+    #embedding
+    embeded_text = embedding(nodes)
+    ## upsert
+    _idx.upsert(
+        vectors=[(node.metadata['file_name'][:2]+node.metadata['page_label'], emb, {'text': node.text}) for node, emb in zip(nodes,embeded_text)])
+    #show_vectordb()
     
-    def show_vectordb(self):
-        print("Vector DB (Pinecone)- status: ", self.pc_index.describe_index_stats())
-
-    def deletes(self,doc_name):
-        #current delete all
-        self.pc_index.delete(delete_all=True)
+def init_pipecone():
+    # Define the index name
+    pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+    index_name = "rag579"
+    if index_name not in pc.list_indexes().names():
+        #Embedding output dimension = 384
+        pc.create_index(name='rag579', dimension=384, metric="cosine", spec=PodSpec(environment="gcp-starter"))
+        # connect to index
+        pc_index = pc.Index(index_name)
         
-def get_args(argv=None):
+    pc_index = pc.Index(index_name)
+    vector_store = PineconeVectorStore(pinecone_index=pc_index)
+    #Print init status
+    print("VectorDB init")
+    return pc_index, vector_store
+    
+def show_vectordb(_idx):
+    print("Vector DB (Pinecone)- status: ", _idx.describe_index_stats())
+
+def deletes(_idx):
+    #current delete all
+    _idx.delete(delete_all=True)
+        
+if __name__== "__main__":
+    # parsing
     parser = argparse.ArgumentParser(description= 'Process the pdf file for uploading the file to Pinecone (Vector DB)')
     parser.add_argument('--file_name', type=str, default= None, help='A path of input file')
-    #parser.add_argument('--folder', type=str, help='A folder path for input files')
-    parser.add_argument('--folder', type=str, default= './documents/', help='A folder path for input files')
-    parser.add_argument('--name_space', type=str, default = None, help= 'Enter the assgining the namespace on Pinecone')
-    parser.add_argument('--chunck_size', type=int, default=200, help='Enter the chunck size over 100 range')
-    parser.add_argument('--chunck_overlap', type=float, default=0.25, help='The portion of the overlap chunks: 25% = 0.25 range[0,1]')
+    parser.add_argument('--chunk_size', type=int, default=200, help='Enter the chunk size over 100 range')
+    parser.add_argument('--chunk_overlap', type=float, default=0.25, help='The portion of the overlap chunks: 25% = 0.25 range[0,1]')
     parser.add_argument('--delete', type=bool, default=False)
-    parser.parse_args()
-    #parser.print_help()
+    parser.add_argument('--folder', type=str, default= './documents/', help='A folder path for input files')
+    args = parser.parse_args()
     
-    return parser.parse_args(argv)
+    #Initiate the vector space
+    index, vector_space = init_pipecone()
 
-if __name__== "__main__":
-    inputs = get_args()
-    data_load = Upload(inputs)
-    # Upload
-    data_load.upsert_data()
-    # data_load.deletes('hello')
-    # data_load.show_vectordb()
+    #Check the task
+    if args.file_name is None and args.delete == False:
+        deletes(index)
+    elif args.file_name:
+        #File read
+        data = read_data(args.file_name)
+        upsert_data(index, data, args.chunk_size, args.chunk_overlap)
+    else:
+        print("Choose the tasks - upload pdf or delete pdf")
