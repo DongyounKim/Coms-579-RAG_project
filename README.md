@@ -26,7 +26,7 @@ Build the Retrieval-augmented generation (RAG)
 ## Demo video link
 * 1st demo (upload.py): https://youtu.be/m0bHtik0rVs?si=d6gJkUau4J8j9pRF
 * 2nd demo (query.py): https://youtu.be/nXHYhM7QiWw?si=S1J_yPOGxLKiBfht
-* 3rd demo (gui.py):
+* 3rd demo (gui.py): https://youtu.be/rpEhpPKHfok?si=_C1hN5jv7mMNk0PR
 ## Project Structure
 
 #### Data repository
